@@ -1,0 +1,33 @@
+﻿{
+  "author": "Azumatt",
+  "classifications": [
+    "ServerSync Mod"
+  ],
+  "name": "ServerSyncModTemplate",
+  "identity": "Server.Sync.Mod.Template",
+  "shortName": "ssmt",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "ServerSyncModTemplate",
+  "preferNameDirectory": "true",
+  "symbols": {
+    "AuthorName": {
+      "type": "parameter",
+      "description": "The name of the person that you want to call the author of the mod.",
+      "datatype": "string",
+      "defaultValue": "Azumatt",
+      "replaces": "{Azumatt}"
+    }
+  },
+  "sources": [
+    {
+      "modifiers": [
+        {
+          "exclude": [ ".git/**", ".idea/**", ".vs/**", "obj/**", "bin/**", "ServerSyncModTemplate.sln", "ServerSyncModTemplate.sln.DotSettings.user" ]
+        }
+      ]
+    }
+  ]
+}
