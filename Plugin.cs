@@ -38,10 +38,10 @@ namespace ServerSyncModTemplate
         public void Awake()
         {
             // Uncomment the line below to use the LocalizationManager for localizing your mod.
+            // Make sure to populate the English.yml file in the translation folder with your keys to be localized and the values associated before uncommenting!.
             //Localizer.Load(); // Use this to initialize the LocalizationManager (for more information on LocalizationManager, see the LocalizationManager documentation https://github.com/blaxxun-boop/LocalizationManager#example-project).
 
-            _serverConfigLocked = config("1 - General", "Lock Configuration", Toggle.On,
-                "If on, the configuration is locked and can be changed by server admins only.");
+            _serverConfigLocked = config("1 - General", "Lock Configuration", Toggle.On, "If on, the configuration is locked and can be changed by server admins only.");
             _ = ConfigSync.AddLockingConfigEntry(_serverConfigLocked);
 
             
