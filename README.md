@@ -1,4 +1,4 @@
-﻿# Server Sync Mod Template
+# Server Sync Mod Template
 
 Can be used to already have your project set up and ready to go with ServerSync and basic version checking. Please see the [Original Repository](https://github.com/blaxxun-boop/ServerSync) if you have to update, or have further questions this template might not answer.
 

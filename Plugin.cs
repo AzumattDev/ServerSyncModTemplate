@@ -1,9 +1,11 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
+using JetBrains.Annotations;
 using ServerSync;
 using UnityEngine;
 
@@ -43,8 +45,6 @@ namespace ServerSyncModTemplate
 
             _serverConfigLocked = config("1 - General", "Lock Configuration", Toggle.On, "If on, the configuration is locked and can be changed by server admins only.");
             _ = ConfigSync.AddLockingConfigEntry(_serverConfigLocked);
-
-            
 
 
             Assembly assembly = Assembly.GetExecutingAssembly();
@@ -113,9 +113,12 @@ namespace ServerSyncModTemplate
 
         private class ConfigurationManagerAttributes
         {
-            public bool? Browsable = false;
+            [UsedImplicitly] public int? Order = null!;
+            [UsedImplicitly] public bool? Browsable = null!;
+            [UsedImplicitly] public string? Category = null!;
+            [UsedImplicitly] public Action<ConfigEntryBase>? CustomDrawer = null!;
         }
-        
+
         class AcceptableShortcuts : AcceptableValueBase
         {
             public AcceptableShortcuts() : base(typeof(KeyboardShortcut))

@@ -1,5 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using HarmonyLib;
 
 namespace ServerSyncModTemplate
@@ -18,6 +22,7 @@ namespace ServerSyncModTemplate
             ServerSyncModTemplatePlugin.ServerSyncModTemplateLogger.LogInfo("Invoking version check");
             ZPackage zpackage = new();
             zpackage.Write(ServerSyncModTemplatePlugin.ModVersion);
+            zpackage.Write(RpcHandlers.ComputeHashForMod().Replace("-", ""));
             peer.m_rpc.Invoke($"{ServerSyncModTemplatePlugin.ModName}_VersionCheck", zpackage);
         }
     }
@@ -37,7 +42,7 @@ namespace ServerSyncModTemplate
 
         private static void Postfix(ZNet __instance)
         {
-            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), "RequestAdminSync",
+            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), $"{ServerSyncModTemplatePlugin.ModName}RequestAdminSync",
                 new ZPackage());
         }
     }
@@ -76,17 +81,18 @@ namespace ServerSyncModTemplate
         public static void RPC_ServerSyncModTemplate_Version(ZRpc rpc, ZPackage pkg)
         {
             string? version = pkg.ReadString();
+            string? hash = pkg.ReadString();
+
+            var hashForAssembly = ComputeHashForMod().Replace("-", "");
             ServerSyncModTemplatePlugin.ServerSyncModTemplateLogger.LogInfo("Version check, local: " +
                                                                             ServerSyncModTemplatePlugin.ModVersion +
                                                                             ",  remote: " + version);
-            if (version != ServerSyncModTemplatePlugin.ModVersion)
+            if (hash != hashForAssembly || version != ServerSyncModTemplatePlugin.ModVersion)
             {
-                ServerSyncModTemplatePlugin.ConnectionError =
-                    $"{ServerSyncModTemplatePlugin.ModName} Installed: {ServerSyncModTemplatePlugin.ModVersion}\n Needed: {version}";
+                ServerSyncModTemplatePlugin.ConnectionError = $"{ServerSyncModTemplatePlugin.ModName} Installed: {ServerSyncModTemplatePlugin.ModVersion} {hashForAssembly}\n Needed: {version} {hash}";
                 if (!ZNet.instance.IsServer()) return;
                 // Different versions - force disconnect client from server
-                ServerSyncModTemplatePlugin.ServerSyncModTemplateLogger.LogWarning(
-                    $"Peer ({rpc.m_socket.GetHostName()}) has incompatible version, disconnecting");
+                ServerSyncModTemplatePlugin.ServerSyncModTemplateLogger.LogWarning($"Peer ({rpc.m_socket.GetHostName()}) has incompatible version, disconnecting...");
                 rpc.Invoke("Error", 3);
             }
             else
@@ -105,6 +111,21 @@ namespace ServerSyncModTemplate
                     ValidatedPeers.Add(rpc);
                 }
             }
+        }
+
+        public static string ComputeHashForMod()
+        {
+            using SHA256 sha256Hash = SHA256.Create();
+            // ComputeHash - returns byte array  
+            byte[] bytes = sha256Hash.ComputeHash(File.ReadAllBytes(Assembly.GetExecutingAssembly().Location));
+            // Convert byte array to a string   
+            StringBuilder builder = new();
+            foreach (byte b in bytes)
+            {
+                builder.Append(b.ToString("X2"));
+            }
+
+            return builder.ToString();
         }
     }
 }
