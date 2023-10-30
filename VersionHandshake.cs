@@ -22,7 +22,6 @@ namespace ServerSyncModTemplate
             ServerSyncModTemplatePlugin.ServerSyncModTemplateLogger.LogInfo("Invoking version check");
             ZPackage zpackage = new();
             zpackage.Write(ServerSyncModTemplatePlugin.ModVersion);
-            zpackage.Write(RpcHandlers.ComputeHashForMod().Replace("-", ""));
             peer.m_rpc.Invoke($"{ServerSyncModTemplatePlugin.ModName}_VersionCheck", zpackage);
         }
     }
@@ -68,8 +67,7 @@ namespace ServerSyncModTemplate
         {
             if (!__instance.IsServer()) return;
             // Remove peer from validated list
-            ServerSyncModTemplatePlugin.ServerSyncModTemplateLogger.LogInfo(
-                $"Peer ({peer.m_rpc.m_socket.GetHostName()}) disconnected, removing from validated list");
+            ServerSyncModTemplatePlugin.ServerSyncModTemplateLogger.LogInfo($"Peer ({peer.m_rpc.m_socket.GetHostName()}) disconnected, removing from validated list");
             _ = RpcHandlers.ValidatedPeers.Remove(peer.m_rpc);
         }
     }
@@ -81,15 +79,12 @@ namespace ServerSyncModTemplate
         public static void RPC_ServerSyncModTemplate_Version(ZRpc rpc, ZPackage pkg)
         {
             string? version = pkg.ReadString();
-            string? hash = pkg.ReadString();
-
-            var hashForAssembly = ComputeHashForMod().Replace("-", "");
             ServerSyncModTemplatePlugin.ServerSyncModTemplateLogger.LogInfo("Version check, local: " +
                                                                             ServerSyncModTemplatePlugin.ModVersion +
                                                                             ",  remote: " + version);
-            if (hash != hashForAssembly || version != ServerSyncModTemplatePlugin.ModVersion)
+            if (version != ServerSyncModTemplatePlugin.ModVersion)
             {
-                ServerSyncModTemplatePlugin.ConnectionError = $"{ServerSyncModTemplatePlugin.ModName} Installed: {ServerSyncModTemplatePlugin.ModVersion} {hashForAssembly}\n Needed: {version} {hash}";
+                ServerSyncModTemplatePlugin.ConnectionError = $"{ServerSyncModTemplatePlugin.ModName} Installed: {ServerSyncModTemplatePlugin.ModVersion}\n Needed: {version}";
                 if (!ZNet.instance.IsServer()) return;
                 // Different versions - force disconnect client from server
                 ServerSyncModTemplatePlugin.ServerSyncModTemplateLogger.LogWarning($"Peer ({rpc.m_socket.GetHostName()}) has incompatible version, disconnecting...");
@@ -100,32 +95,15 @@ namespace ServerSyncModTemplate
                 if (!ZNet.instance.IsServer())
                 {
                     // Enable mod on client if versions match
-                    ServerSyncModTemplatePlugin.ServerSyncModTemplateLogger.LogInfo(
-                        "Received same version from server!");
+                    ServerSyncModTemplatePlugin.ServerSyncModTemplateLogger.LogInfo("Received same version from server!");
                 }
                 else
                 {
                     // Add client to validated list
-                    ServerSyncModTemplatePlugin.ServerSyncModTemplateLogger.LogInfo(
-                        $"Adding peer ({rpc.m_socket.GetHostName()}) to validated list");
+                    ServerSyncModTemplatePlugin.ServerSyncModTemplateLogger.LogInfo($"Adding peer ({rpc.m_socket.GetHostName()}) to validated list");
                     ValidatedPeers.Add(rpc);
                 }
             }
-        }
-
-        public static string ComputeHashForMod()
-        {
-            using SHA256 sha256Hash = SHA256.Create();
-            // ComputeHash - returns byte array  
-            byte[] bytes = sha256Hash.ComputeHash(File.ReadAllBytes(Assembly.GetExecutingAssembly().Location));
-            // Convert byte array to a string   
-            StringBuilder builder = new();
-            foreach (byte b in bytes)
-            {
-                builder.Append(b.ToString("X2"));
-            }
-
-            return builder.ToString();
         }
     }
 }
