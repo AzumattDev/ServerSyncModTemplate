@@ -18,19 +18,13 @@ namespace ServerSyncModTemplate
         internal const string ModName = "ServerSyncModTemplate";
         internal const string ModVersion = "1.0.0";
         internal const string Author = "{Azumatt}";
-        private const string ModGUID = Author + "." + ModName;
-        private static string ConfigFileName = ModGUID + ".cfg";
+        private const string ModGUID = $"{Author}.{ModName}";
+        private static string ConfigFileName = $"{ModGUID}.cfg";
         private static string ConfigFileFullPath = Paths.ConfigPath + Path.DirectorySeparatorChar + ConfigFileName;
-
         internal static string ConnectionError = "";
-
         private readonly Harmony _harmony = new(ModGUID);
-
-        public static readonly ManualLogSource ServerSyncModTemplateLogger =
-            BepInEx.Logging.Logger.CreateLogSource(ModName);
-
-        private static readonly ConfigSync ConfigSync = new(ModGUID)
-            { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
+        public static readonly ManualLogSource ServerSyncModTemplateLogger = BepInEx.Logging.Logger.CreateLogSource(ModName);
+        private static readonly ConfigSync ConfigSync = new(ModGUID) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
 
         public enum Toggle
         {
@@ -89,14 +83,9 @@ namespace ServerSyncModTemplate
 
         private static ConfigEntry<Toggle> _serverConfigLocked = null!;
 
-        private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description,
-            bool synchronizedSetting = true)
+        private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
         {
-            ConfigDescription extendedDescription =
-                new(
-                    description.Description +
-                    (synchronizedSetting ? " [Synced with Server]" : " [Not Synced with Server]"),
-                    description.AcceptableValues, description.Tags);
+            ConfigDescription extendedDescription = new(description.Description + (synchronizedSetting ? " [Synced with Server]" : " [Not Synced with Server]"), description.AcceptableValues, description.Tags);
             ConfigEntry<T> configEntry = Config.Bind(group, name, value, extendedDescription);
             //var configEntry = Config.Bind(group, name, value, description);
 
@@ -106,8 +95,7 @@ namespace ServerSyncModTemplate
             return configEntry;
         }
 
-        private ConfigEntry<T> config<T>(string group, string name, T value, string description,
-            bool synchronizedSetting = true)
+        private ConfigEntry<T> config<T>(string group, string name, T value, string description, bool synchronizedSetting = true)
         {
             return config(group, name, value, new ConfigDescription(description), synchronizedSetting);
         }
@@ -129,8 +117,7 @@ namespace ServerSyncModTemplate
             public override object Clamp(object value) => value;
             public override bool IsValid(object value) => true;
 
-            public override string ToDescriptionString() =>
-                "# Acceptable values: " + string.Join(", ", UnityInput.Current.SupportedKeyCodes);
+            public override string ToDescriptionString() => $"# Acceptable values: {string.Join(", ", UnityInput.Current.SupportedKeyCodes)}";
         }
 
         #endregion

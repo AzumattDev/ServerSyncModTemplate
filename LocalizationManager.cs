@@ -54,7 +54,7 @@ public class Localizer
 		string text = loadedTexts[language][key];
 		if (PlaceholderProcessors.TryGetValue(key, out Dictionary<string, Func<string>> textProcessors))
 		{
-			text = textProcessors.Aggregate(text, (current, kv) => current.Replace("{" + kv.Key + "}", kv.Value()));
+			text = textProcessors.Aggregate(text, (current, kv) => current.Replace($"{{{kv.Key}}}", kv.Value()));
 		}
 		localization.AddWord(key, text);
 	}
@@ -181,7 +181,7 @@ public class Localizer
 	{
 		foreach (string extension in fileExtensions)
 		{
-			if (ReadEmbeddedFileBytes("translations." + language + extension) is { } data)
+			if (ReadEmbeddedFileBytes($"translations.{language}{extension}") is { } data)
 			{
 				return data;
 			}

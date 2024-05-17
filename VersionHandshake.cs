@@ -33,16 +33,14 @@ namespace ServerSyncModTemplate
         {
             if (!__instance.IsServer() || RpcHandlers.ValidatedPeers.Contains(rpc)) return true;
             // Disconnect peer if they didn't send mod version at all
-            ServerSyncModTemplatePlugin.ServerSyncModTemplateLogger.LogWarning(
-                $"Peer ({rpc.m_socket.GetHostName()}) never sent version or couldn't due to previous disconnect, disconnecting");
+            ServerSyncModTemplatePlugin.ServerSyncModTemplateLogger.LogWarning($"Peer ({rpc.m_socket.GetHostName()}) never sent version or couldn't due to previous disconnect, disconnecting");
             rpc.Invoke("Error", 3);
             return false; // Prevent calling underlying method
         }
 
         private static void Postfix(ZNet __instance)
         {
-            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), $"{ServerSyncModTemplatePlugin.ModName}RequestAdminSync",
-                new ZPackage());
+            ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.instance.GetServerPeerID(), $"{ServerSyncModTemplatePlugin.ModName}RequestAdminSync", new ZPackage());
         }
     }
 
@@ -55,7 +53,7 @@ namespace ServerSyncModTemplate
             {
                 __instance.m_connectionFailedError.fontSizeMax = 25;
                 __instance.m_connectionFailedError.fontSizeMin = 15;
-                __instance.m_connectionFailedError.text += "\n" + ServerSyncModTemplatePlugin.ConnectionError;
+                __instance.m_connectionFailedError.text += $"\n{ServerSyncModTemplatePlugin.ConnectionError}";
             }
         }
     }
@@ -79,9 +77,7 @@ namespace ServerSyncModTemplate
         public static void RPC_ServerSyncModTemplate_Version(ZRpc rpc, ZPackage pkg)
         {
             string? version = pkg.ReadString();
-            ServerSyncModTemplatePlugin.ServerSyncModTemplateLogger.LogInfo("Version check, local: " +
-                                                                            ServerSyncModTemplatePlugin.ModVersion +
-                                                                            ",  remote: " + version);
+            ServerSyncModTemplatePlugin.ServerSyncModTemplateLogger.LogInfo($"Version check, local: {ServerSyncModTemplatePlugin.ModVersion},  remote: {version}");
             if (version != ServerSyncModTemplatePlugin.ModVersion)
             {
                 ServerSyncModTemplatePlugin.ConnectionError = $"{ServerSyncModTemplatePlugin.ModName} Installed: {ServerSyncModTemplatePlugin.ModVersion}\n Needed: {version}";
