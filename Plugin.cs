@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Timers;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
@@ -25,6 +26,10 @@ namespace ServerSyncModTemplate
         private readonly Harmony _harmony = new(ModGUID);
         public static readonly ManualLogSource ServerSyncModTemplateLogger = BepInEx.Logging.Logger.CreateLogSource(ModName);
         private static readonly ConfigSync ConfigSync = new(ModGUID) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
+        private FileSystemWatcher _watcher;
+        private readonly object _reloadLock = new();
+        private DateTime _lastConfigReloadTime;
+        private const long RELOAD_DELAY = 10000000; // One second
 
         public enum Toggle
         {
@@ -34,6 +39,9 @@ namespace ServerSyncModTemplate
 
         public void Awake()
         {
+            bool saveOnSet = Config.SaveOnConfigSet;
+            Config.SaveOnConfigSet = false;
+
             // Uncomment the line below to use the LocalizationManager for localizing your mod.
             // Make sure to populate the English.yml file in the translation folder with your keys to be localized and the values associated before uncommenting!.
             //Localizer.Load(); // Use this to initialize the LocalizationManager (for more information on LocalizationManager, see the LocalizationManager documentation https://github.com/blaxxun-boop/LocalizationManager#example-project).
@@ -45,36 +53,71 @@ namespace ServerSyncModTemplate
             Assembly assembly = Assembly.GetExecutingAssembly();
             _harmony.PatchAll(assembly);
             SetupWatcher();
+
+            Config.Save();
+            if (saveOnSet)
+            {
+                Config.SaveOnConfigSet = saveOnSet;
+            }
         }
 
         private void OnDestroy()
         {
-            Config.Save();
+            SaveWithRespectToConfigSet();
+            _watcher?.Dispose();
         }
 
         private void SetupWatcher()
         {
-            FileSystemWatcher watcher = new(Paths.ConfigPath, ConfigFileName);
-            watcher.Changed += ReadConfigValues;
-            watcher.Created += ReadConfigValues;
-            watcher.Renamed += ReadConfigValues;
-            watcher.IncludeSubdirectories = true;
-            watcher.SynchronizingObject = ThreadingHelper.SynchronizingObject;
-            watcher.EnableRaisingEvents = true;
+            _watcher = new FileSystemWatcher(Paths.ConfigPath, ConfigFileName);
+            _watcher.Changed += ReadConfigValues;
+            _watcher.Created += ReadConfigValues;
+            _watcher.Renamed += ReadConfigValues;
+            _watcher.IncludeSubdirectories = true;
+            _watcher.SynchronizingObject = ThreadingHelper.SynchronizingObject;
+            _watcher.EnableRaisingEvents = true;
         }
 
         private void ReadConfigValues(object sender, FileSystemEventArgs e)
         {
-            if (!File.Exists(ConfigFileFullPath)) return;
-            try
+            DateTime now = DateTime.Now;
+            long time = now.Ticks - _lastConfigReloadTime.Ticks;
+            if (time < RELOAD_DELAY)
             {
-                ServerSyncModTemplateLogger.LogDebug("ReadConfigValues called");
-                Config.Reload();
+                return;
             }
-            catch
+            lock (_reloadLock)
             {
-                ServerSyncModTemplateLogger.LogError($"There was an issue loading your {ConfigFileName}");
-                ServerSyncModTemplateLogger.LogError("Please check your config entries for spelling and format!");
+                if (!File.Exists(ConfigFileFullPath))
+                {
+                    ServerSyncModTemplateLogger.LogWarning("Config file does not exist. Skipping reload.");
+                    return;
+                }
+
+                try
+                {
+                    ServerSyncModTemplateLogger.LogDebug("Reloading configuration...");
+                    SaveWithRespectToConfigSet(true);
+                    ServerSyncModTemplateLogger.LogInfo("Configuration reload complete.");
+                }
+                catch (Exception ex)
+                {
+                    ServerSyncModTemplateLogger.LogError($"Error reloading configuration: {ex.Message}");
+                }
+            }
+            _lastConfigReloadTime = now;
+        }
+
+        private void SaveWithRespectToConfigSet(bool reload = false)
+        {
+            bool originalSaveOnSet = Config.SaveOnConfigSet;
+            Config.SaveOnConfigSet = false;
+            if (reload)
+                Config.Reload();
+            Config.Save();
+            if (originalSaveOnSet)
+            {
+                Config.SaveOnConfigSet = originalSaveOnSet;
             }
         }
 
@@ -122,7 +165,7 @@ namespace ServerSyncModTemplate
 
         #endregion
     }
-    
+
     public static class KeyboardExtensions
     {
         public static bool IsKeyDown(this KeyboardShortcut shortcut)
@@ -133,6 +176,19 @@ namespace ServerSyncModTemplate
         public static bool IsKeyHeld(this KeyboardShortcut shortcut)
         {
             return shortcut.MainKey != KeyCode.None && Input.GetKey(shortcut.MainKey) && shortcut.Modifiers.All(Input.GetKey);
+        }
+    }
+
+    public static class ToggleExtentions
+    {
+        public static bool IsOn(this ServerSyncModTemplatePlugin.Toggle value)
+        {
+            return value == ServerSyncModTemplatePlugin.Toggle.On;
+        }
+
+        public static bool IsOff(this ServerSyncModTemplatePlugin.Toggle value)
+        {
+            return value == ServerSyncModTemplatePlugin.Toggle.Off;
         }
     }
 }

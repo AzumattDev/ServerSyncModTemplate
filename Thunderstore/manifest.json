@@ -1,5 +1,5 @@
 {
-  "name": "YOURMODNAME_HERE",
+  "name": "ServerSyncModTemplate",
   "version_number": "1.0.0",
   "website_url": "https://discord.gg/pdHgy6Bsng",
   "description": "Your mod description goes here. Do not forget to replace the icon.png file with your own. Must be 256x256. Your Readme.md file will be copied from the one in your project folder.",
