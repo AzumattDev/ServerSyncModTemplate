@@ -121,6 +121,13 @@ public class ServerSyncModTemplatePlugin : BaseUnityPlugin
         {
             Config.SaveOnConfigSet = originalSaveOnSet;
         }
+        
+        // If you want to do something once localization completes, LocalizationManager has a hook for that.
+        /*Localizer.OnLocalizationComplete += () =>
+        {
+            // Do something
+            ItemManagerModTemplateLogger.LogDebug("OnLocalizationComplete called");
+        };*/
     }
 
 
